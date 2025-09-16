@@ -16,8 +16,8 @@ public class SabotageSystem : MonoBehaviour
 
     [Header("Prefabs")]
     public GameObject fireTrailPrefab;
-    // public GameObject missilePrefab;
-    // public GameObject enemyPrefab;
+    public GameObject missilePrefab;
+    public GameObject enemyPrefab;
 
     [Header("Costs")]
     public int fireTrailCost = 1;
@@ -53,15 +53,28 @@ public class SabotageSystem : MonoBehaviour
     {
         Transform target = GetPlayerTransform(targetPlayer);
         if (!target) return;
-        Instantiate(fireTrailPrefab, target.position, Quaternion.identity);
+
+        GameObject fireObj = Instantiate(fireTrailPrefab, target.position, Quaternion.identity);
+        FireTrail fireTrail = fireObj.GetComponent<FireTrail>();
+        if (fireTrail != null)
+        {
+            fireTrail.Initialize(target); // Set the player to follow
+        }
     }
 
     private void SpawnMissile(int targetPlayer)
     {
         Transform target = GetPlayerTransform(targetPlayer);
         if (!target) return;
+
         Vector3 spawnPos = target.position + Vector3.up * 8f;
-        // Instantiate missile here
+        GameObject missileObj = Instantiate(missilePrefab, spawnPos, Quaternion.identity);
+
+        Missile missile = missileObj.GetComponent<Missile>();
+        if (missile != null)
+        {
+            missile.target = target;
+        }
     }
 
     private void SpawnEnemies(int targetPlayer)
@@ -72,7 +85,13 @@ public class SabotageSystem : MonoBehaviour
         for (int i = 0; i < 3; i++)
         {
             Vector3 spawnPos = target.position + new Vector3(Random.Range(-3f, 3f), Random.Range(-3f, 3f), 0);
-            // Instantiate enemy here
+            GameObject demonObj = Instantiate(enemyPrefab, spawnPos, Quaternion.identity);
+
+            Demon demon = demonObj.GetComponent<Demon>();
+            if (demon != null)
+            {
+                demon.target = target;
+            }
         }
     }
 

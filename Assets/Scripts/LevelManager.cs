@@ -98,9 +98,15 @@ public class LevelManager : MonoBehaviour
         }
     }
 
+    public static int winnerId = 0; // 0 = none, 1 = player1, 2 = player2
+
     private void PlayerWin(string sceneName)
     {
         gameActive = false;
+
+        // Store the winner before loading the win scene
+        winnerId = (sceneName == "WinScreenP1") ? 1 : 2;
+
         SceneManager.LoadScene("WinScene");
     }
 
