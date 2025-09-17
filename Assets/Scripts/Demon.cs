@@ -7,6 +7,7 @@ public class Demon : MonoBehaviour
     public Transform target;
     public float speed = 3f;
     public float lifeTime = 5f;
+    public int damage = 10; // damage applied on hit
 
     private float timer;
 
@@ -28,9 +29,14 @@ public class Demon : MonoBehaviour
 
     private void OnCollisionEnter2D(Collision2D col)
     {
-        if (col.transform == target)
+        // Check if collided object has a PlayerController
+        PlayerController player = col.gameObject.GetComponent<PlayerController>();
+
+        if (player != null && col.transform == target)
         {
-            Debug.Log($"{target.name} is being attacked by an enemy!");
+            player.TakeDamage(damage);
+            Debug.Log($"{target.name} took {damage} damage from a Demon!");
+            Destroy(gameObject); // demon disappears after hitting
         }
     }
 }

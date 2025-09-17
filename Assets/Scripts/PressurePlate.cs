@@ -10,6 +10,7 @@ public class PressurePlate : PuzzleElement
 
     [Header("Target Element")]
     [SerializeField] private PuzzleElement target; // e.g. a Door
+    [SerializeField] private PushableCrate crate; // Reference to the PushableCrate script
 
     private void Start()
     {
@@ -19,13 +20,25 @@ public class PressurePlate : PuzzleElement
     private void OnTriggerEnter2D(Collider2D collision)
     {
         if (collision.CompareTag("Player") || collision.CompareTag("Crate"))
+        {
             Activate();
+            if (collision.CompareTag("Crate"))
+            {
+                crate.SetPressurePlateStatus(true);  // Notify the crate that the plate is activated
+            }
+        }
     }
 
     private void OnTriggerExit2D(Collider2D collision)
     {
         if (collision.CompareTag("Player") || collision.CompareTag("Crate"))
+        {
             Deactivate();
+            if (collision.CompareTag("Crate"))
+            {
+                crate.SetPressurePlateStatus(false);  // Notify the crate that the plate is deactivated
+            }
+        }
     }
 
     public override void Activate()

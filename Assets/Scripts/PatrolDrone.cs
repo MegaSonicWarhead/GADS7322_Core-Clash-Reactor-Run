@@ -37,20 +37,30 @@ public class PatrolDrone : MonoBehaviour
 
     void FixedUpdate()
     {
-        if (player == null)
+        if (player == null || !player.gameObject.activeInHierarchy)
         {
             SearchForPlayer();
         }
 
-        if (player != null && Vector2.Distance(transform.position, player.position) <= detectionRange)
+        // If a player is found, check range and health
+        if (player != null &&
+            player.gameObject.activeInHierarchy &&
+            Vector2.Distance(transform.position, player.position) <= detectionRange)
         {
-            // Stop and look at player
-            LookAtPlayer();
-            TryShoot();
+            PlayerController pc = player.GetComponent<PlayerController>();
+            if (pc != null && pc.currentHealth > 0)
+            {
+                LookAtPlayer();
+                TryShoot();
+            }
+            else
+            {
+                player = null; // player is dead
+                Patrol();
+            }
         }
         else
         {
-            player = null; // Reset player if out of range
             Patrol();
         }
     }

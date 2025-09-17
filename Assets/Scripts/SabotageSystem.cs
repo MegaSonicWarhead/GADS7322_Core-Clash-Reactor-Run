@@ -15,12 +15,12 @@ public class SabotageSystem : MonoBehaviour
     public GameObject blackoutPanelP2;
 
     [Header("Prefabs")]
-    public GameObject fireTrailPrefab;
+    public GameObject spiderWebPrefab;
     public GameObject missilePrefab;
     public GameObject enemyPrefab;
 
     [Header("Costs")]
-    public int fireTrailCost = 1;
+    public int spiderWebCost = 1;
     public int missileCost = 2;
     public int blackoutCost = 3;
     public int enemyCost = 2;
@@ -40,7 +40,7 @@ public class SabotageSystem : MonoBehaviour
 
         switch (sabotageIndex)
         {
-            case 0: if (SpendCoins(playerId, fireTrailCost)) SpawnFireTrail(targetPlayer); break;
+            case 0: if (SpendCoins(playerId, spiderWebCost)) SpawnSpiderWeb(targetPlayer); break;
             case 1: if (SpendCoins(playerId, missileCost)) SpawnMissile(targetPlayer); break;
             case 2: if (SpendCoins(playerId, blackoutCost)) StartCoroutine(BlackoutRoutine(targetPlayer)); break;
             case 3: if (SpendCoins(playerId, enemyCost)) SpawnEnemies(targetPlayer); break;
@@ -49,16 +49,16 @@ public class SabotageSystem : MonoBehaviour
     }
 
     // --- Prefab Spawners ---
-    private void SpawnFireTrail(int targetPlayer)
+    private void SpawnSpiderWeb(int targetPlayer)
     {
         Transform target = GetPlayerTransform(targetPlayer);
         if (!target) return;
 
-        GameObject fireObj = Instantiate(fireTrailPrefab, target.position, Quaternion.identity);
-        FireTrail fireTrail = fireObj.GetComponent<FireTrail>();
-        if (fireTrail != null)
+        GameObject webObj = Instantiate(spiderWebPrefab, target.position, Quaternion.identity);
+        SpiderWeb web = webObj.GetComponent<SpiderWeb>();
+        if (web != null)
         {
-            fireTrail.Initialize(target); // Set the player to follow
+            web.Initialize(target); // Follow the target player
         }
     }
 

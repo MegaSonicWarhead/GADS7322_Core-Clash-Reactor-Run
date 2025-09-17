@@ -30,6 +30,7 @@ public class MissileManager : MonoBehaviour
     {
         if (target == null || missilePrefab == null) return;
 
+        // Spawn missile above target, facing downward
         Vector3 spawnPos = target.position + Vector3.up * spawnHeight;
         GameObject missile = Instantiate(missilePrefab, spawnPos, Quaternion.identity);
 

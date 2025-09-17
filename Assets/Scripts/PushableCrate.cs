@@ -9,10 +9,12 @@ public class PushableCrate : MonoBehaviour
     private Vector3 initialPosition;
 
     [Header("Reset Settings")]
-    public float resetInterval = 25f; // seconds
+    public float resetInterval = 30f; // seconds
 
     // Track if the crate is on a pressure plate
     private bool isOnPressurePlate = false;
+    // Track if the pressure plate is activated
+    private bool isPressurePlateActivated = false;
 
     private void Awake()
     {
@@ -53,7 +55,8 @@ public class PushableCrate : MonoBehaviour
         {
             yield return new WaitForSeconds(resetInterval);
 
-            if (!isOnPressurePlate)
+            // Don't reset the crate if it's on the pressure plate and the plate is activated
+            if (!isOnPressurePlate || !isPressurePlateActivated)
             {
                 // Stop all movement
                 rb.velocity = Vector2.zero;
@@ -63,5 +66,11 @@ public class PushableCrate : MonoBehaviour
                 transform.position = initialPosition;
             }
         }
+    }
+
+    // Method to set the pressure plate activation status from PressurePlate script
+    public void SetPressurePlateStatus(bool isActivated)
+    {
+        isPressurePlateActivated = isActivated;
     }
 }
