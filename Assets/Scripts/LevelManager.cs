@@ -22,7 +22,10 @@ public class LevelManager : MonoBehaviour
     private bool gameActive = true;
 
     [Header("UI References")]
-    [SerializeField] private TextMeshProUGUI timerText; // 👈 drag your TMP Text here in the inspector
+    [SerializeField] private TextMeshProUGUI timerText;
+    [SerializeField] private GameObject pausePanel; // 👈 drag your PausePanel here
+
+    private bool isPaused = false;
 
     private void Awake()
     {
@@ -34,11 +37,22 @@ public class LevelManager : MonoBehaviour
     {
         timer = timeLimit;
         UpdateTimerUI();
+
+        if (pausePanel != null)
+            pausePanel.SetActive(false);
     }
 
     private void Update()
     {
-        if (!gameActive) return;
+        // -----------------------
+        // Handle Pause Toggle
+        // -----------------------
+        if (Input.GetKeyDown(KeyCode.P))
+        {
+            TogglePause();
+        }
+
+        if (!gameActive || isPaused) return;
 
         // countdown
         timer -= Time.deltaTime;
@@ -63,21 +77,40 @@ public class LevelManager : MonoBehaviour
         }
     }
 
-    // Called when a player collects a node
+    // -----------------------
+    // Pause / Resume
+    // -----------------------
+    public void TogglePause()
+    {
+        isPaused = !isPaused;
+
+        if (isPaused)
+        {
+            Time.timeScale = 0f; // pause physics + updates
+            if (pausePanel != null) pausePanel.SetActive(true);
+        }
+        else
+        {
+            Time.timeScale = 1f; // resume
+            if (pausePanel != null) pausePanel.SetActive(false);
+        }
+    }
+
+    // -----------------------
+    // Nodes + Win Logic
+    // -----------------------
     public void RegisterNodeComplete(int playerId)
     {
         if (playerId == 1) player1Nodes++;
         else if (playerId == 2) player2Nodes++;
     }
 
-    // Called if a node gets uncollected or reset
     public void RegisterNodeIncomplete(int playerId)
     {
         if (playerId == 1 && player1Nodes > 0) player1Nodes--;
         else if (playerId == 2 && player2Nodes > 0) player2Nodes--;
     }
 
-    // Called when a player presses E at the reactor
     public void TryFixReactor(int playerId)
     {
         if (!gameActive) return;
@@ -103,10 +136,7 @@ public class LevelManager : MonoBehaviour
     private void PlayerWin(string sceneName)
     {
         gameActive = false;
-
-        // Store the winner before loading the win scene
         winnerId = (sceneName == "WinScreenP1") ? 1 : 2;
-
         SceneManager.LoadScene("WinScene");
     }
 
