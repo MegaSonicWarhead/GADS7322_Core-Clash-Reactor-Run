@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
 [RequireComponent(typeof(Rigidbody2D))]
@@ -22,9 +23,11 @@ public class PlayerController : MonoBehaviour
     public Slider healthBar; // World Space slider
     public Vector3 healthBarOffset = new Vector3(0, 1.5f, 0);
 
+    [Header("Panels")]
+    public GameObject sabotageItemPanel; // assign each player’s sabotage panel
+
     [Header("Interaction")]
     public float interactRange = 1f;
-    //public LayerMask interactableLayer;
 
     private Rigidbody2D rb;
     private bool isGrounded;
@@ -33,6 +36,10 @@ public class PlayerController : MonoBehaviour
     private bool jumpPressed;
 
     public int playerId = 1; // 1 = P1, 2 = P2
+
+    // --- NEW static tracking for both players ---
+    private static bool player1Dead = false;
+    private static bool player2Dead = false;
 
     private void Awake()
     {
@@ -44,6 +51,9 @@ public class PlayerController : MonoBehaviour
             healthBar.maxValue = maxHealth;
             healthBar.value = currentHealth;
         }
+
+        if (sabotageItemPanel != null)
+            sabotageItemPanel.SetActive(false); // start closed
     }
 
     private void Update()
@@ -73,6 +83,9 @@ public class PlayerController : MonoBehaviour
             if (Input.GetKeyDown(KeyCode.E))
                 TryInteract();
 
+            if (Input.GetKeyDown(KeyCode.Q))
+                ToggleSabotagePanel();
+
             // Sabotages (keys 1–5)
             if (Input.GetKeyDown(KeyCode.Alpha1)) TrySabotage(0);
             if (Input.GetKeyDown(KeyCode.Alpha2)) TrySabotage(1);
@@ -93,6 +106,9 @@ public class PlayerController : MonoBehaviour
             if (Input.GetKeyDown(KeyCode.Keypad7))
                 TryInteract();
 
+            if (Input.GetKeyDown(KeyCode.Keypad9))
+                ToggleSabotagePanel();
+
             // Sabotages (keys 6–0)
             if (Input.GetKeyDown(KeyCode.Alpha6)) TrySabotage(0);
             if (Input.GetKeyDown(KeyCode.Alpha7)) TrySabotage(1);
@@ -102,13 +118,20 @@ public class PlayerController : MonoBehaviour
         }
     }
 
+    private void ToggleSabotagePanel()
+    {
+        if (sabotageItemPanel != null)
+        {
+            sabotageItemPanel.SetActive(!sabotageItemPanel.activeSelf);
+        }
+    }
+
     // ------------------------
     // Movement
     // ------------------------
     private void HandleMovement()
     {
         isGrounded = Physics2D.OverlapCircle(groundCheck.position, groundCheckRadius, groundLayer);
-
         rb.velocity = new Vector2(inputX * moveSpeed, rb.velocity.y);
 
         if (jumpPressed && isGrounded)
@@ -139,6 +162,15 @@ public class PlayerController : MonoBehaviour
     {
         gameObject.SetActive(false);
         Debug.Log("Player " + playerId + " died!");
+
+        if (playerId == 1) player1Dead = true;
+        else if (playerId == 2) player2Dead = true;
+
+        if (player1Dead && player2Dead)
+        {
+            Debug.Log("Both players are dead. Loading GameOver...");
+            SceneManager.LoadScene("GameOver");
+        }
     }
 
     private void UpdateHealthBarPosition()

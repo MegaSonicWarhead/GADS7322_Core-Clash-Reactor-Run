@@ -4,10 +4,10 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
-public class StartGameButton : MonoBehaviour
+public class PlayButton : MonoBehaviour
 {
     [Header("Scene Settings")]
-    public string sceneToLoad = "HowToPlay";
+    public string sceneToLoad = "Level1";
 
     private Button button;
 
