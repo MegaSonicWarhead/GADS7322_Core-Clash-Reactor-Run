@@ -8,6 +8,9 @@ using UnityEngine.UI;
 [RequireComponent(typeof(Rigidbody2D))]
 public class PlayerController : MonoBehaviour
 {
+    public Animator animator;
+    private SpriteRenderer spriteRenderer; // <- NEW
+
     [Header("Movement")]
     public float moveSpeed = 5f;
     public float jumpForce = 10f;
@@ -20,11 +23,11 @@ public class PlayerController : MonoBehaviour
     public int currentHealth;
 
     [Header("UI")]
-    public Slider healthBar; // World Space slider
+    public Slider healthBar;
     public Vector3 healthBarOffset = new Vector3(0, 1.5f, 0);
 
     [Header("Panels")]
-    public GameObject sabotageItemPanel; // assign each player’s sabotage panel
+    public GameObject sabotageItemPanel;
 
     [Header("Interaction")]
     public float interactRange = 1f;
@@ -35,15 +38,16 @@ public class PlayerController : MonoBehaviour
     private float inputX;
     private bool jumpPressed;
 
-    public int playerId = 1; // 1 = P1, 2 = P2
+    public int playerId = 1;
 
-    // --- NEW static tracking for both players ---
     private static bool player1Dead = false;
     private static bool player2Dead = false;
 
     private void Awake()
     {
         rb = GetComponent<Rigidbody2D>();
+        spriteRenderer = GetComponent<SpriteRenderer>(); // <- NEW
+
         currentHealth = maxHealth;
 
         if (healthBar != null)
@@ -53,13 +57,14 @@ public class PlayerController : MonoBehaviour
         }
 
         if (sabotageItemPanel != null)
-            sabotageItemPanel.SetActive(false); // start closed
+            sabotageItemPanel.SetActive(false);
     }
 
     private void Update()
     {
         HandleInput();
         UpdateHealthBarPosition();
+        UpdateAnimations();
     }
 
     private void FixedUpdate()
@@ -72,7 +77,6 @@ public class PlayerController : MonoBehaviour
     // ------------------------
     private void HandleInput()
     {
-        // --- Player 1 Controls ---
         if (playerId == 1)
         {
             inputX = Input.GetAxisRaw("Horizontal");
@@ -86,14 +90,12 @@ public class PlayerController : MonoBehaviour
             if (Input.GetKeyDown(KeyCode.Q))
                 ToggleSabotagePanel();
 
-            // Sabotages (keys 1–5)
             if (Input.GetKeyDown(KeyCode.Alpha1)) TrySabotage(0);
             if (Input.GetKeyDown(KeyCode.Alpha2)) TrySabotage(1);
             if (Input.GetKeyDown(KeyCode.Alpha3)) TrySabotage(2);
             if (Input.GetKeyDown(KeyCode.Alpha4)) TrySabotage(3);
             if (Input.GetKeyDown(KeyCode.Alpha5)) TrySabotage(4);
         }
-        // --- Player 2 Controls (Numpad) ---
         else if (playerId == 2)
         {
             if (Input.GetKey(KeyCode.Keypad4)) inputX = -1f;
@@ -109,7 +111,6 @@ public class PlayerController : MonoBehaviour
             if (Input.GetKeyDown(KeyCode.Keypad9))
                 ToggleSabotagePanel();
 
-            // Sabotages (keys 6–0)
             if (Input.GetKeyDown(KeyCode.Alpha6)) TrySabotage(0);
             if (Input.GetKeyDown(KeyCode.Alpha7)) TrySabotage(1);
             if (Input.GetKeyDown(KeyCode.Alpha8)) TrySabotage(2);
@@ -141,6 +142,23 @@ public class PlayerController : MonoBehaviour
         }
 
         jumpPressed = false;
+
+        // --- Flip character sprite ---
+        if (spriteRenderer != null && inputX != 0)
+        {
+            spriteRenderer.flipX = inputX < 0;
+        }
+    }
+
+    // ------------------------
+    // Animations
+    // ------------------------
+    private void UpdateAnimations()
+    {
+        if (animator == null) return;
+
+        animator.SetFloat("Speed", Mathf.Abs(inputX));
+        animator.SetBool("IsGrounded", isGrounded);
     }
 
     // ------------------------
