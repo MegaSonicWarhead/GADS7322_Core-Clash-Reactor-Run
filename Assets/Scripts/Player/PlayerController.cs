@@ -43,10 +43,17 @@ public class PlayerController : MonoBehaviour
     private static bool player1Dead = false;
     private static bool player2Dead = false;
 
+    // Add field
+    private PushableCrate carriedCrate;
+    public float carrySpeedMultiplier = 0.5f; // reduces speed while carrying
+
+    // --- NEW ---
+    private Vector3 startPosition;
+
     private void Awake()
     {
         rb = GetComponent<Rigidbody2D>();
-        spriteRenderer = GetComponent<SpriteRenderer>(); // <- NEW
+        spriteRenderer = GetComponent<SpriteRenderer>();
 
         currentHealth = maxHealth;
 
@@ -58,6 +65,9 @@ public class PlayerController : MonoBehaviour
 
         if (sabotageItemPanel != null)
             sabotageItemPanel.SetActive(false);
+
+        // Store starting position
+        startPosition = transform.position;
     }
 
     private void Update()
@@ -90,11 +100,22 @@ public class PlayerController : MonoBehaviour
             if (Input.GetKeyDown(KeyCode.Q))
                 ToggleSabotagePanel();
 
+            if (Input.GetKeyDown(KeyCode.LeftShift) && carriedCrate != null)
+            {
+                Debug.Log("Player " + playerId + " dropped crate");
+                carriedCrate.Drop();
+                carriedCrate = null;
+                moveSpeed /= carrySpeedMultiplier; // restore speed
+            }
+
             if (Input.GetKeyDown(KeyCode.Alpha1)) TrySabotage(0);
             if (Input.GetKeyDown(KeyCode.Alpha2)) TrySabotage(1);
             if (Input.GetKeyDown(KeyCode.Alpha3)) TrySabotage(2);
             if (Input.GetKeyDown(KeyCode.Alpha4)) TrySabotage(3);
             if (Input.GetKeyDown(KeyCode.Alpha5)) TrySabotage(4);
+
+            // --- Reset key for Player 1 ---
+            if (Input.GetKeyDown(KeyCode.R)) ResetPosition();
         }
         else if (playerId == 2)
         {
@@ -111,11 +132,22 @@ public class PlayerController : MonoBehaviour
             if (Input.GetKeyDown(KeyCode.Keypad9))
                 ToggleSabotagePanel();
 
+            if (Input.GetKeyDown(KeyCode.RightShift) && carriedCrate != null)
+            {
+                Debug.Log("Player " + playerId + " dropped crate");
+                carriedCrate.Drop();
+                carriedCrate = null;
+                moveSpeed /= carrySpeedMultiplier;
+            }
+
             if (Input.GetKeyDown(KeyCode.Alpha6)) TrySabotage(0);
             if (Input.GetKeyDown(KeyCode.Alpha7)) TrySabotage(1);
             if (Input.GetKeyDown(KeyCode.Alpha8)) TrySabotage(2);
             if (Input.GetKeyDown(KeyCode.Alpha9)) TrySabotage(3);
             if (Input.GetKeyDown(KeyCode.Alpha0)) TrySabotage(4);
+
+            // --- Reset key for Player 2 (Keypad2) ---
+            if (Input.GetKeyDown(KeyCode.Keypad2)) ResetPosition();
         }
     }
 
@@ -204,12 +236,26 @@ public class PlayerController : MonoBehaviour
     // ------------------------
     private void TryInteract()
     {
+        Debug.Log("Player " + playerId + " pressed interact");
+
+        // --- Already carrying something? Then throw immediately ---
+        if (carriedCrate != null)
+        {
+            Debug.Log("Player " + playerId + " is throwing crate");
+            carriedCrate.Throw();
+            carriedCrate = null;
+            moveSpeed /= carrySpeedMultiplier; // restore speed
+            return;
+        }
+
+        // --- Otherwise look for interactables ---
         Collider2D[] hits = Physics2D.OverlapCircleAll(transform.position, interactRange);
 
         foreach (Collider2D hit in hits)
         {
             if (hit.CompareTag("Switch"))
             {
+                Debug.Log("Player " + playerId + " interacting with Switch");
                 var switchComponent = hit.GetComponent<Switch>();
                 if (switchComponent != null)
                 {
@@ -219,6 +265,7 @@ public class PlayerController : MonoBehaviour
             }
             else if (hit.CompareTag("PuzzleNode"))
             {
+                Debug.Log("Player " + playerId + " interacting with PuzzleNode");
                 var node = hit.GetComponent<PuzzleNode>();
                 if (node != null && !node.IsPowered)
                 {
@@ -229,10 +276,35 @@ public class PlayerController : MonoBehaviour
             }
             else if (hit.CompareTag("Reactor"))
             {
+                Debug.Log("Player " + playerId + " interacting with Reactor");
                 LevelManager.Instance.TryFixReactor(playerId);
                 return;
             }
+            else if (hit.CompareTag("Crate"))
+            {
+                var crate = hit.GetComponent<PushableCrate>();
+                if (crate != null)
+                {
+                    Debug.Log("Player " + playerId + " picked up crate");
+                    crate.PickUp(transform);
+                    carriedCrate = crate;
+                    moveSpeed *= carrySpeedMultiplier;
+                    return;
+                }
+            }
         }
+
+        Debug.Log("Player " + playerId + " interact found nothing in range");
+    }
+
+    // ------------------------
+    // Reset Position
+    // ------------------------
+    private void ResetPosition()
+    {
+        Debug.Log("Player " + playerId + " reset to start position");
+        transform.position = startPosition;
+        rb.velocity = Vector2.zero; // stop any momentum
     }
 
     // ------------------------

@@ -1,4 +1,4 @@
-using System.Collections;
+﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -18,6 +18,8 @@ public class MainMenuButton : MonoBehaviour
 
     private void OnMainMenuClicked()
     {
+        // ✅ Always reset timescale before reloading
+        Time.timeScale = 1f;
         if (!string.IsNullOrEmpty(mainMenuSceneName))
         {
             SceneManager.LoadScene(mainMenuSceneName);

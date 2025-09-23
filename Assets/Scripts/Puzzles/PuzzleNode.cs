@@ -1,4 +1,4 @@
-using System.Collections;
+﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -7,6 +7,7 @@ public class PuzzleNode : PuzzleElement
     private bool isPowered = false;
     private int collectedBy = 0;
     private SpriteRenderer sr;
+    public string rodColor; // "Green", "Red", "Blue"
 
     private void Awake()
     {
@@ -22,11 +23,17 @@ public class PuzzleNode : PuzzleElement
         if (!isPowered && collectedBy != 0)
         {
             isPowered = true;
-            Debug.Log($"Puzzle Node activated by Player {collectedBy}");
 
-            if (sr != null) sr.enabled = false; // hide node visually
+            // Hide the node visually
+            if (sr != null) sr.enabled = false;
 
-            LevelManager.Instance.RegisterNodeComplete(collectedBy);
+            // Tell LevelManager that the node is complete
+            LevelManager.Instance.RegisterNodeComplete(collectedBy, rodColor);
+
+            // 🔑 Also unlock the rod UI
+            LevelManager.Instance.UnlockRod(collectedBy, rodColor);
+
+            Debug.Log($"Puzzle Node ({rodColor}) activated by Player {collectedBy}");
         }
     }
 
@@ -35,12 +42,17 @@ public class PuzzleNode : PuzzleElement
         if (isPowered && collectedBy != 0)
         {
             isPowered = false;
-            Debug.Log($"Puzzle Node deactivated by Player {collectedBy}");
 
-            if (sr != null) sr.enabled = true; // show node again
+            // Show the node again
+            if (sr != null) sr.enabled = true;
 
-            LevelManager.Instance.RegisterNodeIncomplete(collectedBy);
+            // Inform LevelManager that node is incomplete
+            LevelManager.Instance.RegisterNodeIncomplete(collectedBy, rodColor);
+
+            // Reset
             collectedBy = 0;
+
+            Debug.Log($"Puzzle Node ({rodColor}) deactivated");
         }
     }
 

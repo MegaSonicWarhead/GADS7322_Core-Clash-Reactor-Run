@@ -1,4 +1,4 @@
-using System.Collections;
+﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -19,6 +19,9 @@ public class RestartGameButton : MonoBehaviour
 
     private void OnStartGameClicked()
     {
+        // ✅ Always reset timescale before reloading
+        Time.timeScale = 1f;
+
         if (!string.IsNullOrEmpty(sceneToLoad))
         {
             SceneManager.LoadScene(sceneToLoad);
