@@ -8,13 +8,17 @@ public class Switch : PuzzleElement
     [SerializeField] private Color activeColor = Color.green;
     [SerializeField] private PuzzleConnector connector;
     [SerializeField] private WireColor wireColor = WireColor.Red;
+    [SerializeField] private AudioClip activateSound; // Sound to play once when active
 
     private bool isActive;
     private Color defaultColor;
+    private AudioSource audioSource;
 
     private void Start()
     {
         defaultColor = indicator.color;
+        audioSource = GetComponent<AudioSource>();
+        audioSource.playOnAwake = false;
     }
 
     // Remove Update() completely. Interaction is handled by PlayerController
@@ -24,13 +28,26 @@ public class Switch : PuzzleElement
         isActive = !isActive;
         indicator.color = isActive ? activeColor : defaultColor;
         connector.SendSignal(isActive, wireColor);
+
+        if (isActive && activateSound != null)
+        {
+            audioSource.PlayOneShot(activateSound);
+        }
     }
 
     public override void Activate()
     {
-        isActive = true;
-        indicator.color = activeColor;
-        connector.SendSignal(true, wireColor);
+        if (!isActive) // Prevents playing sound multiple times if already active
+        {
+            isActive = true;
+            indicator.color = activeColor;
+            connector.SendSignal(true, wireColor);
+
+            if (activateSound != null)
+            {
+                audioSource.PlayOneShot(activateSound);
+            }
+        }
     }
 
     public override void Deactivate()

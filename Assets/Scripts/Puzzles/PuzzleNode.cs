@@ -9,10 +9,17 @@ public class PuzzleNode : PuzzleElement
     private SpriteRenderer sr;
     public string rodColor; // "Green", "Red", "Blue"
 
+    [Header("Audio")]
+    [SerializeField] private AudioClip activateSound; // Sound to play once when activated
+    private AudioSource audioSource;
+
     private void Awake()
     {
         sr = GetComponent<SpriteRenderer>();
         if (sr == null) Debug.LogWarning($"{name} has no SpriteRenderer!");
+
+        audioSource = GetComponent<AudioSource>();
+        audioSource.playOnAwake = false;
     }
 
     // Public read-only property
@@ -32,6 +39,12 @@ public class PuzzleNode : PuzzleElement
 
             // 🔑 Also unlock the rod UI
             LevelManager.Instance.UnlockRod(collectedBy, rodColor);
+
+            // Play sound once
+            if (activateSound != null)
+            {
+                audioSource.PlayOneShot(activateSound);
+            }
 
             Debug.Log($"Puzzle Node ({rodColor}) activated by Player {collectedBy}");
         }

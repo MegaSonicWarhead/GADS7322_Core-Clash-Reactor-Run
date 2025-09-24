@@ -11,6 +11,15 @@ public class ElectricArc : MonoBehaviour
     private bool active = true;
     private float timer;
 
+    private AudioSource audioSource;
+
+    private void Awake()
+    {
+        audioSource = GetComponent<AudioSource>();
+        audioSource.loop = true; // Make sure it loops
+        audioSource.playOnAwake = false; // Don’t auto-play
+    }
+
     private void Update()
     {
         timer += Time.deltaTime;
@@ -22,11 +31,27 @@ public class ElectricArc : MonoBehaviour
     {
         active = state;
         timer = 0f;
+
+        // Enable/disable visuals
         var sr = gameObject.GetComponent<SpriteRenderer>();
         if (sr != null) sr.enabled = state;
 
+        // Enable/disable collider
         var col = gameObject.GetComponent<Collider2D>();
         if (col != null) col.enabled = state;
+
+        // Handle sound
+        if (audioSource != null)
+        {
+            if (state && !audioSource.isPlaying)
+            {
+                audioSource.Play();
+            }
+            else if (!state && audioSource.isPlaying)
+            {
+                audioSource.Stop();
+            }
+        }
     }
 
     private void OnTriggerEnter2D(Collider2D collision)

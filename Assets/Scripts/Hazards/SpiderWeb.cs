@@ -6,8 +6,12 @@ public class SpiderWeb : MonoBehaviour
 {
     [Header("Web Settings")]
     public float slowMultiplier = 0.5f;   // how much the player is slowed
-    public float duration = 4f;           // how long the web follows
+    public float duration = 4f;           // how long the web lasts
     private Transform targetPlayer;
+
+    [Header("Audio")]
+    public AudioSource audioSource;       // assign in inspector
+    public AudioClip hitClip;             // sound when player is caught
 
     private void Start()
     {
@@ -35,6 +39,12 @@ public class SpiderWeb : MonoBehaviour
         {
             pc.moveSpeed *= slowMultiplier;
             Debug.Log($"{pc.name} is slowed by a spider web!");
+
+            // Play sound once
+            if (audioSource != null && hitClip != null)
+            {
+                audioSource.PlayOneShot(hitClip);
+            }
         }
     }
 

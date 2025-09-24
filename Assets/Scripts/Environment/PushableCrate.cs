@@ -20,6 +20,16 @@ public class PushableCrate : MonoBehaviour
     public float throwForce = 8f; // force when thrown
     public Vector3 carryOffset = new Vector3(0.8f, 0.5f, 0); // offset from player
 
+    [Header("Audio Sources")]
+    public AudioSource pickUpSource;
+    public AudioSource throwSource;
+    public AudioSource dropSource;
+
+    [Header("Audio Clips")]
+    public AudioClip pickUpClip;
+    public AudioClip throwClip;
+    public AudioClip dropClip;
+
     private void Awake()
     {
         rb = GetComponent<Rigidbody2D>();
@@ -59,6 +69,10 @@ public class PushableCrate : MonoBehaviour
 
         rb.isKinematic = true;
         rb.simulated = false; // disable physics while carried
+
+        // Play pick up sound
+        if (pickUpSource != null && pickUpClip != null)
+            pickUpSource.PlayOneShot(pickUpClip);
     }
 
     public void Throw()
@@ -80,11 +94,14 @@ public class PushableCrate : MonoBehaviour
 
         // Throw forward and slightly upward
         Vector2 throwDir = new Vector2(facingDir, 1f).normalized;
-
         rb.velocity = Vector2.zero; // reset velocity
         rb.AddForce(throwDir * throwForce, ForceMode2D.Impulse);
 
         Debug.Log("Crate thrown. Dir=" + throwDir + " Force=" + (throwDir * throwForce));
+
+        // Play throw sound
+        if (throwSource != null && throwClip != null)
+            throwSource.PlayOneShot(throwClip);
 
         carrier = null;
     }
@@ -107,45 +124,24 @@ public class PushableCrate : MonoBehaviour
 
         Debug.Log("Crate dropped by " + carrier.name);
 
+        // Play drop sound
+        if (dropSource != null && dropClip != null)
+            dropSource.PlayOneShot(dropClip);
+
         carrier = null;
     }
 
     private void OnCollisionEnter2D(Collision2D collision)
     {
         if (collision.collider.CompareTag("PressurePlate"))
-        {
             isOnPressurePlate = true;
-        }
     }
 
     private void OnCollisionExit2D(Collision2D collision)
     {
         if (collision.collider.CompareTag("PressurePlate"))
-        {
             isOnPressurePlate = false;
-        }
     }
-
-    private void OnEnable()
-    {
-        //StartCoroutine(ResetLoop());
-    }
-
-    //private IEnumerator ResetLoop()
-    //{
-    //    while (true)
-    //    {
-    //        yield return new WaitForSeconds(resetInterval);
-
-    //        // Don’t reset while carried
-    //        if (!isCarried && (!isOnPressurePlate || !isPressurePlateActivated))
-    //        {
-    //            rb.velocity = Vector2.zero;
-    //            rb.angularVelocity = 0f;
-    //            transform.position = initialPosition;
-    //        }
-    //    }
-    //}
 
     public void SetPressurePlateStatus(bool isActivated)
     {

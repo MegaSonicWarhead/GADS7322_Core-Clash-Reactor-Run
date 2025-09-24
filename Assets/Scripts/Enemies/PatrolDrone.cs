@@ -21,6 +21,10 @@ public class PatrolDrone : MonoBehaviour
     public float fireCooldown = 1f;
     public int projectileDamage = 10;
 
+    [Header("Sounds")]
+    public AudioClip moveSound;   // Looping movement sound
+    public AudioClip shootSound;  // Single shot sound
+
     private Rigidbody2D rb;
     private Transform player;
     private int currentTargetIndex = 0;
@@ -28,11 +32,18 @@ public class PatrolDrone : MonoBehaviour
     private bool forward = true;
     private float lastFireTime = 0f;
 
+    private AudioSource audioSource;
+    private bool isMovingSoundPlaying = false;
+
     void Start()
     {
         rb = GetComponent<Rigidbody2D>();
         patrolPoints = new List<Transform> { pointA, pointB, pointC, pointD };
         currentTargetIndex = 0;
+
+        audioSource = GetComponent<AudioSource>();
+        audioSource.loop = true;
+        audioSource.playOnAwake = false;
     }
 
     void FixedUpdate()
@@ -51,6 +62,7 @@ public class PatrolDrone : MonoBehaviour
             if (pc != null && pc.currentHealth > 0)
             {
                 LookAtPlayer();
+                StopMovementSound(); // stop movement sound when stationary & aiming
                 TryShoot();
             }
             else
@@ -74,7 +86,14 @@ public class PatrolDrone : MonoBehaviour
 
         // Move towards the target
         Vector2 newPos = Vector2.MoveTowards(rb.position, target.position, speed * Time.fixedDeltaTime);
+        Vector2 movement = newPos - rb.position;
         rb.MovePosition(newPos);
+
+        // Play/stop movement sound
+        if (movement.magnitude > 0.001f)
+            PlayMovementSound();
+        else
+            StopMovementSound();
 
         // Switch target if close enough
         if (Vector2.Distance(rb.position, target.position) < 0.1f)
@@ -100,8 +119,8 @@ public class PatrolDrone : MonoBehaviour
         }
 
         // Optional: flip sprite based on movement direction
-        if (rb.velocity.x != 0)
-            transform.localScale = new Vector3(Mathf.Sign(rb.velocity.x), 1f, 1f);
+        if (movement.x != 0)
+            transform.localScale = new Vector3(Mathf.Sign(movement.x), 1f, 1f);
     }
 
     void SearchForPlayer()
@@ -142,7 +161,30 @@ public class PatrolDrone : MonoBehaviour
         if (p != null)
             p.SetDirection(dir, projectileDamage);
 
+        // Play shoot sound once
+        if (shootSound != null)
+            audioSource.PlayOneShot(shootSound);
+
         lastFireTime = Time.time;
+    }
+
+    void PlayMovementSound()
+    {
+        if (moveSound != null && !isMovingSoundPlaying)
+        {
+            audioSource.clip = moveSound;
+            audioSource.Play();
+            isMovingSoundPlaying = true;
+        }
+    }
+
+    void StopMovementSound()
+    {
+        if (isMovingSoundPlaying)
+        {
+            audioSource.Stop();
+            isMovingSoundPlaying = false;
+        }
     }
 
     private void OnDrawGizmosSelected()

@@ -12,9 +12,15 @@ public class PressurePlate : PuzzleElement
     [SerializeField] private PuzzleElement target; // e.g. a Door
     [SerializeField] private PushableCrate crate; // Reference to the PushableCrate script
 
+    [Header("Audio")]
+    [SerializeField] private AudioClip activateSound; // Sound played once when activated
+    private AudioSource audioSource;
+
     private void Start()
     {
         defaultColor = indicator.color;
+        audioSource = GetComponent<AudioSource>();
+        audioSource.playOnAwake = false;
     }
 
     private void OnTriggerEnter2D(Collider2D collision)
@@ -22,7 +28,7 @@ public class PressurePlate : PuzzleElement
         if (collision.CompareTag("Player") || collision.CompareTag("Crate"))
         {
             Activate();
-            if (collision.CompareTag("Crate"))
+            if (collision.CompareTag("Crate") && crate != null)
             {
                 crate.SetPressurePlateStatus(true);  // Notify the crate that the plate is activated
             }
@@ -34,7 +40,7 @@ public class PressurePlate : PuzzleElement
         if (collision.CompareTag("Player") || collision.CompareTag("Crate"))
         {
             Deactivate();
-            if (collision.CompareTag("Crate"))
+            if (collision.CompareTag("Crate") && crate != null)
             {
                 crate.SetPressurePlateStatus(false);  // Notify the crate that the plate is deactivated
             }
@@ -45,6 +51,11 @@ public class PressurePlate : PuzzleElement
     {
         Debug.Log($"{name} PressurePlate Activated!");
         indicator.color = activeColor;
+
+        if (activateSound != null)
+        {
+            audioSource.PlayOneShot(activateSound);
+        }
 
         if (target != null)
         {
