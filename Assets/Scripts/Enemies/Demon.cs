@@ -5,6 +5,7 @@ using UnityEngine;
 public class Demon : MonoBehaviour
 {
     public Transform target;          // The player
+    public int ownerPlayerId;
     public float speed = 3f;          // Walking speed
     public float jumpForce = 7f;      // Jump strength
     public float lifeTime = 30f;      // Demon lifetime
@@ -24,12 +25,30 @@ public class Demon : MonoBehaviour
     private bool movingRight = true;
     private SpriteRenderer sr;
 
+    [Header("Stuck Detection")]
+    public float stuckCheckInterval = 0.5f;
+    public float stuckThreshold = 0.1f; // minimal movement to count as "moving"
+    public float maxStuckTime = 1.5f;   // how long demon can be stuck before reacting
+
+    private float stuckTimer = 0f;
+    private Vector2 lastPosition;
+    private bool isStuck = false;
+
     [Header("Spawn Settings")]
     public float minSpawnDistance = 3f;
     public float maxSpawnDistance = 8f;
 
+    private static Dictionary<int, Demon> activeDemons = new Dictionary<int, Demon>();
+
     private void Start()
     {
+        if (activeDemons.ContainsKey(ownerPlayerId))
+        {
+            Destroy(gameObject);
+            return;
+        }
+        activeDemons[ownerPlayerId] = this;
+
         rb = GetComponent<Rigidbody2D>();
         sr = GetComponent<SpriteRenderer>();
         timer = lifeTime;
@@ -64,6 +83,42 @@ public class Demon : MonoBehaviour
         }
 
         FlipSprite();
+
+        CheckStuck();
+    }
+
+    private void CheckStuck()
+    {
+        float distanceMoved = Mathf.Abs(transform.position.x - lastPosition.x);
+
+        if (distanceMoved < stuckThreshold)
+        {
+            stuckTimer += Time.deltaTime;
+
+            if (stuckTimer >= maxStuckTime)
+            {
+                if (isGrounded)
+                {
+                    // Try jump first
+                    rb.AddForce(Vector2.up * jumpForce, ForceMode2D.Impulse);
+                    Debug.Log("Demon jumped to try unstuck");
+                }
+                else
+                {
+                    // Flip direction if not grounded or jump didn't help
+                    movingRight = !movingRight;
+                    Debug.Log("Demon flipped direction to try unstuck");
+                }
+
+                stuckTimer = 0f; // Reset timer after attempting to fix
+            }
+        }
+        else
+        {
+            stuckTimer = 0f; // Reset timer if moving
+        }
+
+        lastPosition = transform.position;
     }
 
     private void CheckGrounded()
@@ -78,13 +133,13 @@ public class Demon : MonoBehaviour
 
     private void ChasePlayer()
     {
-        Vector2 direction = (target.position - transform.position).normalized;
+        Vector2 direction = (target.position - transform.position);
 
-        // Face the player
-        movingRight = direction.x > 0;
+        // Determine horizontal direction to target
+        float horizontal = Mathf.Sign(direction.x);
+        movingRight = horizontal > 0;
 
-        // Move toward the player
-        HandleMovement(direction.x);
+        HandleMovement(horizontal);
     }
 
     private void HandleMovement(float horizontal)
@@ -109,39 +164,52 @@ public class Demon : MonoBehaviour
         // Jump logic
         if (isGrounded)
         {
-            // Jump if player is higher
-            if (target != null && target.position.y > transform.position.y + 0.5f)
+            if (target != null)
             {
-                rb.AddForce(Vector2.up * jumpForce, ForceMode2D.Impulse);
-            }
-            // Jump down if player is below but within a safe drop distance
-            else if (target != null && transform.position.y - target.position.y > 0.5f)
-            {
-                RaycastHit2D dropHit = Physics2D.Raycast(groundCheck.position, Vector2.down, platformDropDistance, groundLayer);
-                if (dropHit.collider == null)
+                float verticalDifference = target.position.y - transform.position.y;
+
+                if (verticalDifference > 1f)
                 {
-                    StartCoroutine(DropDown());
+                    // Check if wall/ledge in front (optional, to avoid jumping into walls)
+                    RaycastHit2D wallCheck = Physics2D.Raycast(frontCheck.position, Vector2.right * Mathf.Sign(horizontal), 0.3f, groundLayer);
+                    if (!wallCheck.collider)
+                    {
+                        rb.AddForce(Vector2.up * jumpForce, ForceMode2D.Impulse);
+                    }
+                }
+                else if (verticalDifference < -1f)
+                {
+                    // Target is below
+                    TryDropThroughPlatform();
                 }
             }
         }
     }
 
-    private IEnumerator DropDown()
+    private void TryDropThroughPlatform()
     {
+        PlatformEffector2D effector = GetComponent<PlatformEffector2D>();
         Collider2D col = GetComponent<Collider2D>();
-        if (col != null)
+
+        if (col != null && effector != null)
         {
-            col.enabled = false;
-            yield return new WaitForSeconds(0.3f); // adjust for platform height
-            col.enabled = true;
+            StartCoroutine(DropDownPlatform(effector, col));
         }
+    }
+
+    private IEnumerator DropDownPlatform(PlatformEffector2D effector, Collider2D col)
+    {
+        // Disable collision from top
+        effector.rotationalOffset = 180f;
+        yield return new WaitForSeconds(0.3f); // Time to fall
+        effector.rotationalOffset = 0f;
     }
 
     private void FlipSprite()
     {
-        if (sr != null)
+        if (sr != null && rb != null)
         {
-            sr.flipX = !movingRight; // Flip sprite depending on moving direction
+            sr.flipX = rb.velocity.x < 0;
         }
     }
 
@@ -168,5 +236,18 @@ public class Demon : MonoBehaviour
             Gizmos.DrawLine(frontCheck.position, frontCheck.position + Vector3.down * edgeCheckDistance);
             Gizmos.DrawLine(frontCheck.position, frontCheck.position + Vector3.right * (movingRight ? 1 : -1) * obstacleCheckDistance);
         }
+    }
+    private void OnDestroy()
+    {
+        if (activeDemons.ContainsKey(ownerPlayerId) && activeDemons[ownerPlayerId] == this)
+        {
+            activeDemons.Remove(ownerPlayerId);
+        }
+    }
+
+    // Helper for SabotageSystem
+    public static bool HasActiveDemon(int playerId)
+    {
+        return activeDemons.ContainsKey(playerId);
     }
 }

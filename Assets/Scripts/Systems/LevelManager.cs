@@ -24,7 +24,7 @@ public class LevelManager : MonoBehaviour
 
     [Header("UI References")]
     [SerializeField] private TextMeshProUGUI timerText;
-    [SerializeField] private GameObject pausePanel; // 👈 drag your PausePanel here
+    [SerializeField] private GameObject pausePanel;
 
     [Header("Player Rod UI")]
     public Image p1GreenRodImage;
@@ -36,11 +36,20 @@ public class LevelManager : MonoBehaviour
     public Image p2BlueRodImage;
 
     [Header("UI Feedback")]
-    [SerializeField] private TMPro.TextMeshProUGUI reactorMessageP1; // Player 1
-    [SerializeField] private TMPro.TextMeshProUGUI reactorMessageP2; // Player 2
-    [SerializeField] private float messageDuration = 2f; // seconds
+    [SerializeField] private TMPro.TextMeshProUGUI reactorMessageP1;
+    [SerializeField] private TMPro.TextMeshProUGUI reactorMessageP2;
+    [SerializeField] private float messageDuration = 2f;
+
+    [Header("Audio Sources")]
+    public AudioSource warningSource;   // plays when 3 seconds left
+    public AudioSource gameOverSource;  // plays when timer reaches 0
+
+    [Header("Audio Clips")]
+    public AudioClip warningClip;
+    public AudioClip gameOverClip;
 
     private bool isPaused = false;
+    private bool warningPlayed = false;
 
     private void Awake()
     {
@@ -55,7 +64,6 @@ public class LevelManager : MonoBehaviour
 
         if (pausePanel != null)
             pausePanel.SetActive(false);
-
 
         if (reactorMessageP1 != null)
             reactorMessageP1.gameObject.SetActive(false);
@@ -75,9 +83,6 @@ public class LevelManager : MonoBehaviour
 
     private void Update()
     {
-        // -----------------------
-        // Handle Pause Toggle
-        // -----------------------
         if (Input.GetKeyDown(KeyCode.P))
         {
             TogglePause();
@@ -91,10 +96,19 @@ public class LevelManager : MonoBehaviour
 
         UpdateTimerUI();
 
+        // Play warning at 3 seconds left
+        if (!warningPlayed && timer <= 5f && timer > 0f)
+        {
+            if (warningSource != null && warningClip != null)
+                warningSource.PlayOneShot(warningClip);
+
+            warningPlayed = true;
+        }
+
         if (timer <= 0f)
         {
             Debug.Log("Time is up! Both players lose.");
-            GameOver();
+            StartCoroutine(GameOverRoutine());
         }
     }
 
@@ -108,21 +122,18 @@ public class LevelManager : MonoBehaviour
         }
     }
 
-    // -----------------------
-    // Pause / Resume
-    // -----------------------
     public void TogglePause()
     {
         isPaused = !isPaused;
 
         if (isPaused)
         {
-            Time.timeScale = 0f; // pause physics + updates
+            Time.timeScale = 0f;
             if (pausePanel != null) pausePanel.SetActive(true);
         }
         else
         {
-            Time.timeScale = 1f; // resume
+            Time.timeScale = 1f;
             if (pausePanel != null) pausePanel.SetActive(false);
         }
     }
@@ -253,7 +264,7 @@ public class LevelManager : MonoBehaviour
         }
     }
 
-    public static int winnerId = 0; // 0 = none, 1 = player1, 2 = player2
+    public static int winnerId = 0;
 
     private void PlayerWin(string sceneName)
     {
@@ -262,9 +273,16 @@ public class LevelManager : MonoBehaviour
         SceneManager.LoadScene("WinScene");
     }
 
-    private void GameOver()
+    private IEnumerator GameOverRoutine()
     {
         gameActive = false;
+
+        if (gameOverSource != null && gameOverClip != null)
+        {
+            gameOverSource.PlayOneShot(gameOverClip);
+            yield return new WaitForSeconds(gameOverClip.length);
+        }
+
         SceneManager.LoadScene("GameOver");
     }
 }

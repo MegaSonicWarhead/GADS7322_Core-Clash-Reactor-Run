@@ -1,4 +1,4 @@
-using System.Collections;
+﻿using System.Collections;
 using System.Collections.Generic;
 using System.Reflection;
 using UnityEngine;
@@ -25,6 +25,10 @@ public class SabotageSystem : MonoBehaviour
     public int blackoutCost = 3;
     public int enemyCost = 2;
 
+    [Header("Audio")]
+    public AudioSource blackoutSource;
+    public AudioClip blackoutClip;
+
     private int player1Coins = 0;
     private int player2Coins = 0;
 
@@ -43,7 +47,7 @@ public class SabotageSystem : MonoBehaviour
             case 0: if (SpendCoins(playerId, spiderWebCost)) SpawnSpiderWeb(targetPlayer); break;
             case 1: if (SpendCoins(playerId, missileCost)) SpawnMissile(targetPlayer); break;
             case 2: if (SpendCoins(playerId, blackoutCost)) StartCoroutine(BlackoutRoutine(targetPlayer)); break;
-            case 3: if (SpendCoins(playerId, enemyCost)) SpawnEnemies(targetPlayer); break;
+            case 3: if (SpendCoins(playerId, enemyCost)) SpawnEnemies(playerId, targetPlayer); break;
             case 4: Debug.Log($"Reserved sabotage slot for Player {playerId}"); break;
         }
     }
@@ -77,21 +81,32 @@ public class SabotageSystem : MonoBehaviour
         }
     }
 
-    private void SpawnEnemies(int targetPlayer)
+    private void SpawnEnemies(int ownerPlayer, int targetPlayer)
     {
         Transform target = GetPlayerTransform(targetPlayer);
         if (!target) return;
 
-        for (int i = 0; i < 3; i++)
+        if (Demon.HasActiveDemon(ownerPlayer))
         {
-            Vector3 spawnPos = target.position + new Vector3(Random.Range(-3f, 3f), Random.Range(-3f, 3f), 0);
-            GameObject demonObj = Instantiate(enemyPrefab, spawnPos, Quaternion.identity);
+            Debug.Log($"Player {ownerPlayer} already spawned a demon.");
+            return;
+        }
 
-            Demon demon = demonObj.GetComponent<Demon>();
-            if (demon != null)
-            {
-                demon.target = target;
-            }
+        Vector3 spawnPos = FindValidSpawnPosition(target.position, 0.25f, 3f, 20);
+
+        if (spawnPos == Vector3.zero)
+        {
+            Debug.LogWarning("No valid spawn position found for demon!");
+            return;
+        }
+
+        GameObject demonObj = Instantiate(enemyPrefab, spawnPos, Quaternion.identity);
+
+        Demon demon = demonObj.GetComponent<Demon>();
+        if (demon != null)
+        {
+            demon.target = target;
+            demon.ownerPlayerId = ownerPlayer;
         }
     }
 
@@ -101,6 +116,12 @@ public class SabotageSystem : MonoBehaviour
 
         if (panel != null)
         {
+            // Play blackout sound once
+            if (blackoutSource != null && blackoutClip != null)
+            {
+                blackoutSource.PlayOneShot(blackoutClip);
+            }
+
             panel.SetActive(true);
             yield return new WaitForSeconds(3f);
             panel.SetActive(false);
@@ -141,7 +162,6 @@ public class SabotageSystem : MonoBehaviour
 
     private Transform GetPlayerTransform(int id)
     {
-        // Both players share the tag "Player", so find by playerId
         GameObject[] players = GameObject.FindGameObjectsWithTag("Player");
 
         foreach (GameObject player in players)
@@ -152,5 +172,25 @@ public class SabotageSystem : MonoBehaviour
         }
 
         return null;
+    }
+
+    private Vector3 FindValidSpawnPosition(Vector3 center, float minRadius, float maxRadius, int maxAttempts)
+    {
+        for (int i = 0; i < maxAttempts; i++)
+        {
+            // Pick a random point in an annulus (ring)
+            Vector2 offset = Random.insideUnitCircle.normalized * Random.Range(minRadius, maxRadius);
+            Vector3 candidate = center + new Vector3(offset.x, offset.y, 0);
+
+            // Check if the position is free (not inside walls/floors)
+            Collider2D hit = Physics2D.OverlapCircle(candidate, 0.5f, LayerMask.GetMask("Ground"));
+            if (hit == null)
+            {
+                return candidate; // Valid position
+            }
+        }
+
+        // Couldn�t find valid spot
+        return Vector3.zero;
     }
 }
