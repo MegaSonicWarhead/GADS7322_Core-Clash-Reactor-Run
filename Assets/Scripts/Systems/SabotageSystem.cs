@@ -3,10 +3,13 @@ using System.Collections.Generic;
 using System.Reflection;
 using UnityEngine;
 using TMPro;
+using UnityEngine.Tilemaps;
 
 public class SabotageSystem : MonoBehaviour
 {
     public static SabotageSystem Instance;
+
+    public Tilemap levelTilemap;
 
     [Header("UI")]
     public TextMeshProUGUI player1CoinsText;
@@ -47,7 +50,7 @@ public class SabotageSystem : MonoBehaviour
             case 0: if (SpendCoins(playerId, spiderWebCost)) SpawnSpiderWeb(targetPlayer); break;
             case 1: if (SpendCoins(playerId, missileCost)) SpawnMissile(targetPlayer); break;
             case 2: if (SpendCoins(playerId, blackoutCost)) StartCoroutine(BlackoutRoutine(targetPlayer)); break;
-            case 3: if (SpendCoins(playerId, enemyCost)) SpawnEnemies(playerId, targetPlayer); break;
+            case 3: if (SpendCoins(playerId, enemyCost)) SpawnEnemies(targetPlayer); break;
             case 4: Debug.Log($"Reserved sabotage slot for Player {playerId}"); break;
         }
     }
@@ -81,32 +84,49 @@ public class SabotageSystem : MonoBehaviour
         }
     }
 
-    private void SpawnEnemies(int ownerPlayer, int targetPlayer)
+    private void SpawnEnemies(int targetPlayer)
     {
         Transform target = GetPlayerTransform(targetPlayer);
-        if (!target) return;
+        if (target == null) return;
+        if (enemyPrefab == null || levelTilemap == null) return;
 
-        if (Demon.HasActiveDemon(ownerPlayer))
+        float spawnOffsetX = 2f;
+        float spawnHeight = 10f;
+
+        Vector3 spawnPos = target.position + new Vector3(Random.Range(-spawnOffsetX, spawnOffsetX), spawnHeight, 0f);
+
+        Bounds bounds = levelTilemap.localBounds;
+        spawnPos.x = Mathf.Clamp(spawnPos.x, bounds.min.x + 0.5f, bounds.max.x - 0.5f);
+        spawnPos.y = Mathf.Clamp(spawnPos.y, bounds.min.y + 0.5f, bounds.max.y - 0.5f);
+
+        Collider2D hit = Physics2D.OverlapCircle(spawnPos, 0.25f, LayerMask.GetMask("Ground"));
+        if (hit != null)
         {
-            Debug.Log($"Player {ownerPlayer} already spawned a demon.");
-            return;
-        }
-
-        Vector3 spawnPos = FindValidSpawnPosition(target.position, 0.25f, 3f, 20);
-
-        if (spawnPos == Vector3.zero)
-        {
-            Debug.LogWarning("No valid spawn position found for demon!");
-            return;
+            for (int i = 0; i < 6; i++)
+            {
+                spawnPos.y += 0.5f;
+                hit = Physics2D.OverlapCircle(spawnPos, 0.25f, LayerMask.GetMask("Ground"));
+                if (hit == null) break;
+            }
         }
 
         GameObject demonObj = Instantiate(enemyPrefab, spawnPos, Quaternion.identity);
 
+        // Assign target
         Demon demon = demonObj.GetComponent<Demon>();
         if (demon != null)
         {
             demon.target = target;
-            demon.ownerPlayerId = ownerPlayer;
+
+            // Immediately play spawn sound here
+            if (demon.spawnSound != null)
+            {
+                AudioSource src = demon.GetComponent<AudioSource>();
+                if (src == null) src = demonObj.AddComponent<AudioSource>();
+                src.playOnAwake = false;
+                src.spatialBlend = 0f; // 2D
+                src.PlayOneShot(demon.spawnSound);
+            }
         }
     }
 

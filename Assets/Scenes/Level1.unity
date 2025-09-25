@@ -3392,7 +3392,7 @@ Transform:
   m_GameObject: {fileID: 464923002}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: -31.6, y: 1.6, z: 0}
+  m_LocalPosition: {x: -112.7, y: 76, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -3715,7 +3715,7 @@ Transform:
   m_GameObject: {fileID: 525707981}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: -11.8, y: -0.2, z: 0}
+  m_LocalPosition: {x: -6.4, y: -35.2, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -6516,7 +6516,7 @@ Transform:
   m_GameObject: {fileID: 805681185}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: -43.8, y: -0.2, z: 0}
+  m_LocalPosition: {x: 54.9, y: 107.1, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -8028,6 +8028,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: bfccc1e9c99353448adba8f7c19df775, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  levelTilemap: {fileID: 1251334698}
   player1CoinsText: {fileID: 1467036480}
   player2CoinsText: {fileID: 869523733}
   blackoutPanelP1: {fileID: 141704149}
