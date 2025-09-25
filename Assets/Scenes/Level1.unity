@@ -8487,7 +8487,7 @@ MonoBehaviour:
   spiderWebCost: 1
   missileCost: 2
   blackoutCost: 3
-  enemyCost: 2
+  enemyCost: 4
   blackoutSource: {fileID: 1000932805}
   blackoutClip: {fileID: 8300000, guid: 53722bb03ff61a6419bc7770649a51e9, type: 3}
 --- !u!114 &1000932804
